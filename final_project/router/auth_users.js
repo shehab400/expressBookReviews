@@ -45,7 +45,7 @@ regd_users.post("/login", (req,res) => {
 
   }
 
-  return res.status(300).json({message: "username or password is incorrect"});
+  return res.status(400).json({message: "username or password is incorrect"});
 });
 
 // Add a book review
