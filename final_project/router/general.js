@@ -1,5 +1,4 @@
 const express = require('express');
-let books = require("./booksdb.js");
 let isValid = require("./auth_users.js").isValid;
 let users = require("./auth_users.js").users;
 const public_users = express.Router();
@@ -34,13 +33,29 @@ else
 });
 
 // Get the book list available in the shop
-public_users.get('/',function (req, res) {
+public_users.get('/',async (req, res) => { // without using async/await
   //Write your code here
-  return res.status(200).send(JSON.stringify(books, null, 4)) ;
+  return res.status(200).send(JSON.stringify(books, null, 4)) ; 
 });
 
-// Get book details based on ISBN
-public_users.get('/isbn/:isbn',function (req, res) {
+const axios = require('axios');
+const books = require('./booksdb.js'); // This is the simulated database
+
+  // This is the simulated database using async/await
+public_users.get('/', async function (req, res) { 
+    try {
+        let listBooks = await axios.get('http://localhost:5000/books'); // This is the simulated API call
+        return res.status(200).json(listBooks.data);
+    } catch (error) {
+        return res.status(500).json({ message: 'Error retrieving book list' });
+    }
+});
+
+
+
+
+// Get book details based on ISBN //without using async/await
+public_users.get('/isbn/:isbn',function (req, res) { 
   //Write your code here
   const isbn = req.params.isbn;
   book = books[isbn];
@@ -50,8 +65,26 @@ public_users.get('/isbn/:isbn',function (req, res) {
      }
   return res.status(200).send(JSON.stringify(book, null, 4)); 
  });
-  
-// Get book details based on author
+
+
+
+
+ // Get book details based on ISBN using async/await (simulated API call)
+public_users.get('/isbn/:isbn', async function (req, res) { 
+  try{
+    const isbn = req.params.isbn;
+    let listBooks = await axios.get(`http://localhost:5000/books/isbn/${isbn}`);
+    return res.status(200).json(listBooks.data);
+  }
+  catch(error)
+  {
+    return res.status(500).json({ message: `Error in retriving book with isbn ${isbn}` });
+  }
+});
+
+
+
+// Get book details based on author without using async/await
 public_users.get('/author/:author',function (req, res) {
   //Write your code here
   const author = req.params.author;
@@ -69,7 +102,37 @@ public_users.get('/author/:author',function (req, res) {
   return res.status(200).send(JSON.stringify(authorBooks, null, 4));
 });
 
-// Get all books based on title
+
+
+
+// Get book details based on author using async/await
+public_users.get('/author/:author', async function (req, res) {
+  const author = req.params.author;
+  const books = await axios.get('http://localhost:5000/books');
+  try{
+  if(books.data)
+  {
+    for (const [isbn, book] of Object.entries(books.data)) {
+        if (book.author.toLowerCase() === author.toLowerCase()) {
+            authorBooks.push(book);
+        }
+    }
+    if (authorBooks.length === 0)
+    {
+        return res.status(404).json({message: "Author not found"});
+    }
+    return res.status(200).send(JSON.stringify(authorBooks, null, 4));
+  }
+}
+  catch(error)
+  {
+    return res.status(500).json({ message: `Error in retriving book with author ${author}` });
+  }
+});
+
+
+
+// Get all books based on title without using async/await
 public_users.get('/title/:title',function (req, res) {
   //Write your code here
 
@@ -88,6 +151,38 @@ public_users.get('/title/:title',function (req, res) {
   
   return res.status(200).send(JSON.stringify(titleBooks, null, 4));
 });
+
+
+
+
+// Get all books based on title using async/await
+public_users.get('/title/:title', async function (req, res) {
+  const title = req.params.title;
+  let titleBooks = [];
+  const books = await axios.get('http://localhost:5000/books');
+  try
+  {
+    if(books.data)
+    {
+      for (const [isbn, book] of Object.entries(books.data)) {
+          if (book.title.toLowerCase() === title.toLowerCase()) {
+              titleBooks.push(book);
+          }
+      }
+      if (titleBooks.length === 0)
+      {
+          return res.status(404).json({message: "Title not found"});
+      }
+      return res.status(200).send(JSON.stringify(titleBooks, null, 4));
+    }
+  }
+  catch(error)
+  {
+    return res.status(500).json({ message: `Error in retriving book with title ${title}` });
+  }
+});
+
+
 
 //  Get book review
 public_users.get('/review/:isbn',function (req, res) {
